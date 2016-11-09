@@ -1,6 +1,7 @@
 #!/bin/bash
 
-ARRAY=(    
+ARRAY=(
+    'MAVEN_CHECKS=true'
     'TEST_MODULES="!presto-tests,!presto-kafka,!presto-redis,!presto-cassandra,!presto-raptor,!presto-postgresql,!presto-mysql,!presto-accumulo"'
     'TEST_MODULES=presto-tests'
     'TEST_MODULES=presto-accumulo'
