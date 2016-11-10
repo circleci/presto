@@ -8,6 +8,7 @@ machine:
 
 dependencies:
   pre:
+    - mkdir -p .m2/repository
     - rm -rf .m2/repository/com/facebook || mkdir -p .m2/repository/com/facebook
   cache_directories:
     - .m2/repository
