@@ -52,7 +52,7 @@ function stop_unnecessary_hadoop_services() {
 
 function cleanup_docker_containers() {
   # stop containers started with "up"
-  docker-compose -f "${DOCKER_COMPOSE_LOCATION}" down
+  docker-compose -f "${DOCKER_COMPOSE_LOCATION}" kill
 
   # docker logs processes are being terminated as soon as docker container are stopped
   # wait for docker logs termination
@@ -75,7 +75,7 @@ docker-compose version
 docker version
 
 # stop already running containers
-docker-compose -f "${DOCKER_COMPOSE_LOCATION}" down || true
+docker-compose -f "${DOCKER_COMPOSE_LOCATION}" kill || true
 
 # catch terminate signals
 trap termination_handler INT TERM
