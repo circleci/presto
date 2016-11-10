@@ -2,33 +2,62 @@
 
 ARRAY=(
     'MAVEN_CHECKS=true'
-    'TEST_MODULES="!presto-tests,!presto-kafka,!presto-redis,!presto-cassandra,!presto-raptor,!presto-postgresql,!presto-mysql,!presto-accumulo"'
-    'TEST_MODULES=presto-tests'
-    'TEST_MODULES=presto-accumulo'
-    'TEST_MODULES=presto-raptor,presto-redis,presto-cassandra,presto-kafka,presto-postgresql,presto-mysql'
+    'TEST_SPECIFIC_MODULES=presto-tests'
+    'TEST_SPECIFIC_MODULES=presto-raptor'
+    'TEST_SPECIFIC_MODULES=presto-accumulo'
+    'TEST_SPECIFIC_MODULES=presto-cassandra,presto-hive,presto-kafka,presto-mysql,presto-postgresql,presto-redis'
+    'TEST_OTHER_MODULES=!presto-tests,!presto-raptor,!presto-accumulo,!presto-cassandra,!presto-hive,!presto-kafka,!presto-mysql,!presto-postgresql,!presto-redis,!presto-docs,!presto-server,!presto-server-rpm'
     'PRODUCT_TESTS=true'
-    'INTEGRATION_TESTS=true'
+    'HIVE_TESTS=true'
 )
 
 export ${ARRAY[$CIRCLE_NODE_INDEX]}
 
-# We need the value of $TEST_MODULES, so we will leave the test in place.
-test ! -v TEST_MODULES || 
-    ./mvnw test $MAVEN_SKIP_CHECKS_AND_DOCS -B -pl $TEST_MODULES
+# Installation
 
-test ! -v PRODUCT_TESTS || 
-    presto-product-tests/bin/run_on_docker.sh multinode -x quarantine,big_query,storage_formats,profile_specific_tests
+./mvnw -v
 
-test ! -v PRODUCT_TESTS ||
-    presto-product-tests/bin/run_on_docker.sh \
-        singlenode-kerberos-hdfs-impersonation -g storage_formats,cli,hdfs_impersonation,authorization
+if [[ -v TEST_SPECIFIC_MODULES ]]; then
+  ./mvnw install $MAVEN_FAST_INSTALL -pl $TEST_SPECIFIC_MODULES -am
+fi
 
-test ! -v INTEGRATION_TESTS ||
-    presto-hive-hadoop2/bin/run_on_docker.sh
+if [[ -v TEST_OTHER_MODULES ]]; then
+  ./mvnw install $MAVEN_FAST_INSTALL -pl '!presto-docs,!presto-server,!presto-server-rpm'
+fi
 
-test ! -v INTEGRATION_TESTS ||
-    ./mvnw install -DskipTests -B
+if [[ -v PRODUCT_TESTS ]]; then
+  ./mvnw install $MAVEN_FAST_INSTALL -pl '!presto-docs,!presto-server-rpm'
+fi
 
-# Build presto-server-rpm for later artifact upload
-test ! -v DEPLOY_S3_ACCESS_KEY || test ! -v PRODUCT_TESTS ||
-    ./mvnw install -DskipTests $MAVEN_SKIP_CHECKS_AND_DOCS -B -q -T C1 -pl presto-server-rpm
+if [[ -v HIVE_TESTS ]]; then
+  ./mvnw install $MAVEN_FAST_INSTALL -pl presto-hive-hadoop2 -am
+fi
+
+
+# Scripts
+
+if [[ -v MAVEN_CHECKS ]]; then
+  ./mvnw install -DskipTests -B -T C1
+fi
+
+if [[ -v TEST_SPECIFIC_MODULES ]]; then
+  ./mvnw test $MAVEN_SKIP_CHECKS_AND_DOCS -B -pl $TEST_SPECIFIC_MODULES
+fi
+
+if [[ -v TEST_OTHER_MODULES ]]; then
+  ./mvnw test $MAVEN_SKIP_CHECKS_AND_DOCS -B -pl $TEST_OTHER_MODULES
+fi
+
+if [[ -v PRODUCT_TESTS ]]; then
+  presto-product-tests/bin/run_on_docker.sh \
+    multinode -x quarantine,big_query,storage_formats,profile_specific_tests
+fi
+
+if [[ -v PRODUCT_TESTS ]]; then
+  presto-product-tests/bin/run_on_docker.sh \
+    singlenode-kerberos-hdfs-impersonation -g storage_formats,cli,hdfs_impersonation,authorization
+fi
+
+if [[ -v HIVE_TESTS ]]; then
+  presto-hive-hadoop2/bin/run_on_docker.sh
+fi
