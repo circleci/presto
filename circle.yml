@@ -1,3 +1,20 @@
+version: 2
+executorType: machine
+stages:
+  build:
+    parallel: 6
+    workdir: /home/circleci/project
+    environment:
+      - MAVEN_OPTS: "-Xmx512M -XX:+ExitOnOutOfMemoryError"
+      - MAVEN_SKIP_CHECKS_AND_DOCS: "-Dair.check.skip-all=true -Dmaven.javadoc.skip=true"
+      - MAVEN_FAST_INSTALL: "-DskipTests -Dair.check.skip-all=true -Dmaven.javadoc.skip=true -B -q -T C1"
+    steps:
+      - type: checkout
+      - type: shell
+        command: ./parallelization_delegation.sh
+
+
+
 machine:
   environment:
     MAVEN_OPTS: "-Xmx512M -XX:+ExitOnOutOfMemoryError"
